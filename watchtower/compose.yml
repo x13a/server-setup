@@ -1,0 +1,9 @@
+services:
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      WATCHTOWER_LABEL_ENABLE: "true"
