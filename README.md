@@ -1,4 +1,4 @@
-# srv
+# srv-setup
 
 Server setup script
 
