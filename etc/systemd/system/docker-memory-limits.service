@@ -1,0 +1,10 @@
+[Unit]
+Description=Generate Docker memory limits based on total RAM
+Before=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/gen-docker-memory-limits.sh
+
+[Install]
+WantedBy=multi-user.target

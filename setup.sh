@@ -33,17 +33,16 @@ create_user() {
 
 switch_to_user() {
     local username="$1"
-    local script_path src_dir src_base user_home dest_dir script_name
+    local script_path src_base user_home dest_dir script_name
     script_path="$(realpath "$0")" || { echo "cannot resolve script path"; exit 1; }
-    src_dir="$(dirname "$script_path")"
-    src_base="$(basename "$src_dir")"
+    src_base="$(basename "$BASE_DIR")"
     script_name="$(basename "$script_path")"
     user_home=$(eval echo "~$username")
     dest_dir="$user_home/$src_base"
     mkdir -p "$dest_dir"
-    cp -a "$src_dir/." "$dest_dir/"
+    cp -a "$BASE_DIR/." "$dest_dir/"
     chown -R "$username:$username" "$dest_dir"
-    rm -rf "$src_dir"
+    rm -rf "$BASE_DIR"
     echo "switching to user '$username'..." >&2
     exec su - "$username" -c "export SWITCHED=1; bash '$dest_dir/$script_name'"
 }
@@ -69,10 +68,7 @@ add_ssh_pub_key() {
     if [ -z "$pub_key" ]; then
         return 0
     fi
-    if [ ! -d "$ssh_dir" ]; then
-        mkdir -p "$ssh_dir"
-        chmod 700 "$ssh_dir"
-    fi
+    install -d -m 700 "$ssh_dir"
     touch "$authorized_keys"
     if grep -qxF "$pub_key" "$authorized_keys" 2>/dev/null; then
         return 0
@@ -94,9 +90,7 @@ deploy_ssh_config() {
         -e "s/$DEFAULT_SSH_PORT/$ssh_port/" \
         -e "s/SOME_USERNAME/$username/" \
         "$template" > "$tmp_file"
-    sudo cp "$tmp_file" "$target"
-    sudo chown root:root "$target"
-    sudo chmod 600 "$target"
+    sudo install -m 600 -o root -g root "$tmp_file" "$target"
     rm -f "$tmp_file"
     echo "SSH config deployed to $target" >&2
 }
@@ -115,18 +109,11 @@ setup_fail2ban() {
     local template="$BASE_DIR/$target_file"
     local tmp_file
     echo "setuping fail2ban..." >&2
-    if [ ! -d "$target_dir" ]; then
-        sudo mkdir -p "$target_dir"
-        sudo chown root:root "$target_dir"
-        sudo chmod 755 "$target_dir"
-    fi
     tmp_file=$(mktemp)
     sed \
         -e "s/$DEFAULT_SSH_PORT/$ssh_port/" \
         "$template" > "$tmp_file"
-    sudo cp "$tmp_file" "$target_file"
-    sudo chown root:root "$target_file"
-    sudo chmod 644 "$target_file"
+    sudo install -D -m 644 -o root -g root "$tmp_file" "$target_file"
     rm -f "$tmp_file"
     echo "fail2ban config deployed to $target_file" >&2
     sudo systemctl enable fail2ban
@@ -143,6 +130,18 @@ install_docker() {
     rm ./get-docker.sh
     sudo groupadd -f docker
     sudo usermod -aG docker "$username"
+}
+
+set_docker_limits() {
+    local gen_limits="/usr/local/bin/gen-docker-memory-limits.sh"
+    local svc="/etc/systemd/system/docker-memory-limits.service"
+    local d_file="/etc/systemd/system/docker.service.d/override.conf"
+    echo "setting docker limits..." >&2
+    sudo install -D -m 755 -o root -g root "$BASE_DIR/$gen_limits" "$gen_limits"
+    sudo install -D -m 644 -o root -g root "$BASE_DIR/$svc" "$svc"
+    sudo install -D -m 644 -o root -g root "$BASE_DIR/$d_file" "$d_file"
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now docker-memory-limits.service
 }
 
 update_sys() {
@@ -178,6 +177,7 @@ main() {
     configure_ufw "$ssh_port"
     setup_fail2ban "$ssh_port"
     install_docker "$username"
+    set_docker_limits
     echo "done, reboot" >&2
 }
 
