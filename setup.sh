@@ -45,7 +45,7 @@ create_user() {
 switch_to_user() {
     local username="${VARS[username]}"
     local script_path src_base user_home dest_dir script_name
-    script_path="$(realpath "$0")" || { echo "err: cannot resolve script path" >&2; exit 1; }
+    script_path="$(realpath "$0")" || { echo "err: cannot resolve script path, exit" >&2; exit 1; }
     src_base="$(basename "$BASE_DIR")"
     script_name="$(basename "$script_path")"
     user_home=$(eval echo "~$username")
@@ -104,7 +104,7 @@ deploy_ssh_config() {
     local target="/etc/ssh/sshd_config.d/srv.conf"
     local template="$BASE_DIR/$target"
     local tmp_file
-    [[ -f "$template" ]] || { echo "err: missing SSH template $template" >&2; exit 1; }
+    [[ -f "$template" ]] || { echo "err: missing SSH template $template, exit" >&2; exit 1; }
     echo "[*] deploying SSH config for user '$username' on port '$ssh_port'..."
     tmp_file=$(mktemp)
     sed \
@@ -132,7 +132,7 @@ setup_fail2ban() {
     local target_file="$target_dir/sshd.local"
     local template="$BASE_DIR/$target_file"
     local tmp_file
-    [[ -f "$template" ]] || { echo "err: missing fail2ban template $template" >&2; exit 1; }
+    [[ -f "$template" ]] || { echo "err: missing fail2ban template $template, exit" >&2; exit 1; }
     echo "[*] setuping fail2ban..."
     tmp_file=$(mktemp)
     sed \
@@ -166,9 +166,9 @@ set_docker_limits() {
     local gen_limits="/usr/local/bin/gen-docker-memory-limits.sh"
     local svc="/etc/systemd/system/docker-memory-limits.service"
     local d_file="/etc/systemd/system/docker.service.d/override.conf"
-    [[ -f "$BASE_DIR/$gen_limits" ]] || { echo "err: missing $gen_limits" >&2; exit 1; }
-    [[ -f "$BASE_DIR/$svc" ]] || { echo "err: missing $svc" >&2; exit 1; }
-    [[ -f "$BASE_DIR/$d_file" ]] || { echo "err: missing $d_file" >&2; exit 1; }
+    [[ -f "$BASE_DIR/$gen_limits" ]] || { echo "err: missing $gen_limits, exit" >&2; exit 1; }
+    [[ -f "$BASE_DIR/$svc" ]] || { echo "err: missing $svc, exit" >&2; exit 1; }
+    [[ -f "$BASE_DIR/$d_file" ]] || { echo "err: missing $d_file, exit" >&2; exit 1; }
     echo "[*] setting docker limits..."
     sudo install -D -m 755 -o root -g root "$BASE_DIR/$gen_limits" "$gen_limits"
     sudo install -D -m 644 -o root -g root "$BASE_DIR/$svc" "$svc"
