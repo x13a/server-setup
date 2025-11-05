@@ -70,11 +70,11 @@ add_ssh_pub_key() {
     fi
     install -d -m 700 "$ssh_dir"
     touch "$authorized_keys"
+    chmod 600 "$authorized_keys"
     if grep -qxF "$pub_key" "$authorized_keys" 2>/dev/null; then
         return 0
     fi
     echo "$pub_key" >> "$authorized_keys"
-    chmod 600 "$authorized_keys"
     echo "SSH public key added successfully" >&2
 }
 
