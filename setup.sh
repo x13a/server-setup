@@ -196,7 +196,7 @@ update_sys() {
 # ============================
 
 main() {
-    if is_root && [ -z "${SWITCHED:-}" ]; then
+    if is_root; then
         echo "[*] running as root"
         prompt_username
         create_user
