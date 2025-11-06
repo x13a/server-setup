@@ -32,12 +32,12 @@ prompt_username() {
 
 create_user() {
     local username="${VARS[username]}"
+    local sudoers_file="/etc/sudoers.d/$username"
     if ! id "$username" &>/dev/null; then
         adduser --gecos "" "$username"
         usermod -aG sudo "$username"
         echo "[+] user '$username' created and added to sudo group"
     fi
-    local sudoers_file="/etc/sudoers.d/$username"
     echo "$username ALL=(ALL) NOPASSWD:ALL" > "$sudoers_file"
     chmod 440 "$sudoers_file"
 }
@@ -106,7 +106,7 @@ deploy_ssh_config() {
     local tmp_file
     [[ -f "$template" ]] || { echo "err: missing SSH template $template, exit" >&2; exit 1; }
     echo "[*] deploying SSH config for user '$username' on port '$ssh_port'..."
-    tmp_file=$(mktemp)
+    tmp_file="$(mktemp)"
     sed \
         -e "s/${DEFAULTS[ssh_port]}/$ssh_port/" \
         -e "s/SOME_USERNAME/$username/" \
@@ -134,7 +134,7 @@ setup_fail2ban() {
     local tmp_file
     [[ -f "$template" ]] || { echo "err: missing fail2ban template $template, exit" >&2; exit 1; }
     echo "[*] setuping fail2ban..."
-    tmp_file=$(mktemp)
+    tmp_file="$(mktemp)"
     sed \
         -e "s/${DEFAULTS[ssh_port]}/${VARS[ssh_port]}/" \
         "$template" > "$tmp_file"
@@ -192,6 +192,62 @@ update_sys() {
 }
 
 # ============================
+# Swap
+# ============================
+
+setup_swap() {
+    local swap_file="/swapfile"
+    local swap_size="${SWAP_SIZE:-}"
+    local min_free_mb=1024
+    local ram_mb swap_mb avail_mb
+    if swapon --show | grep -q '^'; then
+        echo "[*] swap is already active"
+        return 0
+    fi
+    ram_mb="$(free -m | awk '/^Mem:/ {print $2}')"
+    if [ -z "$swap_size" ]; then
+        if (( ram_mb < 1024 )); then
+            swap_size="2G"
+        elif (( ram_mb < 2048 )); then
+            swap_size="1.5G"
+        elif (( ram_mb < 4096 )); then
+            swap_size="1G"
+        else
+            swap_size="512M"
+        fi
+    fi
+    swap_mb="$(echo "$swap_size" | awk '
+        /G$/ {print int($1 * 1024)}
+        /M$/ {print int($1)}
+        /^[0-9]+$/ {print int($1)}
+    ')"
+    avail_mb="$(df -Pm / | awk 'NR==2 {print $4}')"
+    if (( avail_mb - swap_mb < min_free_mb )); then
+        echo "err: not enough free disk space to safely create ${swap_size} swapfile" >&2
+        echo "     available: ${avail_mb} MB, required: $((swap_mb + min_free_mb)) MB" >&2
+        return 1
+    fi
+    echo "[*] detected ${ram_mb} MB RAM, will create ${swap_size} swapfile"
+    if [ -f "$swap_file" ]; then
+        echo "[*] swapfile exists but is not active, recreating..."
+        sudo swapoff "$swap_file" 2>/dev/null || true
+        sudo rm -f "$swap_file"
+    fi
+    echo "[*] creating swapfile at $swap_file"
+    sudo fallocate -l "$swap_size" "$swap_file" || {
+        echo "err: failed to allocate swapfile" >&2
+        return 1
+    }
+    sudo chmod 600 "$swap_file"
+    sudo mkswap "$swap_file" >/dev/null
+    sudo swapon "$swap_file"
+    if ! grep -q "$swap_file" /etc/fstab; then
+        echo "$swap_file none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
+    fi
+    echo "[+] swap created and activated successfully"
+}
+
+# ============================
 # Main
 # ============================
 
@@ -214,6 +270,7 @@ main() {
     setup_fail2ban
     install_docker
     set_docker_limits
+    setup_swap
     echo "[+] done, reboot"
 }
 
