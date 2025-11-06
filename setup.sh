@@ -74,7 +74,7 @@ configure_ssh() {
     add_ssh_pub_key
     port="$(sudo sshd -G 2>/dev/null | awk '/^port / {print $2}')"
     if [ "$port" = "22" ]; then
-        port="${DEFAULTS[ssh_port]}"
+        port="${SSH_PORT:-${DEFAULTS[ssh_port]}}"
         echo "[*] SSH port set to $port"
     fi
     VARS[ssh_port]="$port"
