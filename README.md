@@ -26,10 +26,10 @@ It’s designed to quickly prepare a clean Ubuntu server for secure remote acces
   - Deploys custom Docker systemd overrides and memory limit service.
 
 - **Swap Management**
-	- Checks if a swap file exists; if not, creates one based on the configured size.
+  - Checks if a swap file exists; if not, creates one based on the configured size.
   - Swap size can be set via the environment variable `SWAP_SIZE` (e.g., `export SWAP_SIZE=2G`).
-	- Enables the swap file and sets appropriate permissions.
-	- Ensures the swap is persistent across reboots.
+  - Enables the swap file and sets appropriate permissions.
+  - Ensures the swap is persistent across reboots.
 
 - **System Maintenance**
   - Updates and upgrades system packages.
