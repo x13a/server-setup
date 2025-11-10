@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -eEuo pipefail
-trap 'echo "err: $BASH_COMMAND on line $LINENO" >&2' ERR
+trap 'echo "error: $BASH_COMMAND on line $LINENO" >&2' ERR
 
 BASE_DIR="$(dirname "$(realpath "$0")")"
 
@@ -26,7 +26,7 @@ is_root() {
 prompt_username() {
     local username
     read -rp "enter new username: " username
-    [ -z "$username" ] && { echo "err: username cannot be empty, exit" >&2; exit 1; }
+    [ -z "$username" ] && { echo "error: username cannot be empty, exit" >&2; exit 1; }
     VARS[username]="$username"
 }
 
@@ -45,7 +45,7 @@ create_user() {
 switch_to_user() {
     local username="${VARS[username]}"
     local script_path src_base user_home dest_dir script_name
-    script_path="$(realpath "$0")" || { echo "err: cannot resolve script path, exit" >&2; exit 1; }
+    script_path="$(realpath "$0")" || { echo "error: cannot resolve script path, exit" >&2; exit 1; }
     src_base="$(basename "$BASE_DIR")"
     script_name="$(basename "$script_path")"
     user_home=$(eval echo "~$username")
@@ -104,7 +104,7 @@ deploy_ssh_config() {
     local target="/etc/ssh/sshd_config.d/srv.conf"
     local template="$BASE_DIR/$target"
     local tmp_file
-    [[ -f "$template" ]] || { echo "err: missing SSH template $template, exit" >&2; exit 1; }
+    [[ -f "$template" ]] || { echo "error: missing SSH template $template, exit" >&2; exit 1; }
     echo "[*] deploying SSH config for user '$username' on port '$ssh_port'..."
     tmp_file="$(mktemp)"
     sed \
@@ -132,7 +132,7 @@ setup_fail2ban() {
     local target_file="$target_dir/sshd.local"
     local template="$BASE_DIR/$target_file"
     local tmp_file
-    [[ -f "$template" ]] || { echo "err: missing fail2ban template $template, exit" >&2; exit 1; }
+    [[ -f "$template" ]] || { echo "error: missing fail2ban template $template, exit" >&2; exit 1; }
     echo "[*] setuping fail2ban..."
     tmp_file="$(mktemp)"
     sed \
@@ -166,9 +166,9 @@ set_docker_limits() {
     local gen_limits="/usr/local/bin/gen-docker-memory-limits.sh"
     local svc="/etc/systemd/system/docker-memory-limits.service"
     local d_file="/etc/systemd/system/docker.service.d/override.conf"
-    [[ -f "$BASE_DIR/$gen_limits" ]] || { echo "err: missing $gen_limits, exit" >&2; exit 1; }
-    [[ -f "$BASE_DIR/$svc" ]] || { echo "err: missing $svc, exit" >&2; exit 1; }
-    [[ -f "$BASE_DIR/$d_file" ]] || { echo "err: missing $d_file, exit" >&2; exit 1; }
+    [[ -f "$BASE_DIR/$gen_limits" ]] || { echo "error: missing $gen_limits, exit" >&2; exit 1; }
+    [[ -f "$BASE_DIR/$svc" ]] || { echo "error: missing $svc, exit" >&2; exit 1; }
+    [[ -f "$BASE_DIR/$d_file" ]] || { echo "error: missing $d_file, exit" >&2; exit 1; }
     echo "[*] setting docker limits..."
     sudo install -D -m 755 -o root -g root "$BASE_DIR/$gen_limits" "$gen_limits"
     sudo install -D -m 644 -o root -g root "$BASE_DIR/$svc" "$svc"
@@ -223,8 +223,8 @@ setup_swap() {
     ')"
     avail_mb="$(df -Pm / | awk 'NR==2 {print $4}')"
     if (( avail_mb - swap_mb < min_free_mb )); then
-        echo "err: not enough free disk space to safely create ${swap_size} swapfile" >&2
-        echo "     available: ${avail_mb} MB, required: $((swap_mb + min_free_mb)) MB" >&2
+        echo "error: not enough free disk space to safely create ${swap_size} swapfile" >&2
+        echo "       available: ${avail_mb} MB, required: $((swap_mb + min_free_mb)) MB" >&2
         return 1
     fi
     echo "[*] detected ${ram_mb} MB RAM, will create ${swap_size} swapfile"
@@ -235,7 +235,7 @@ setup_swap() {
     fi
     echo "[*] creating swapfile at $swap_file"
     sudo fallocate -l "$swap_size" "$swap_file" || {
-        echo "err: failed to allocate swapfile" >&2
+        echo "error: failed to allocate swapfile" >&2
         return 1
     }
     sudo chmod 600 "$swap_file"
