@@ -186,7 +186,7 @@ update_sys() {
     echo "[*] updating system..."
     sudo apt-get update
     sudo apt-get upgrade -y
-    sudo apt-get install fail2ban ufw curl -y
+    sudo apt-get install fail2ban ufw curl unattended-upgrades -y
     sudo apt-get autoremove -y
     echo "[+] system updated"
 }
