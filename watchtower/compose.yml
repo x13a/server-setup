@@ -7,3 +7,4 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       WATCHTOWER_LABEL_ENABLE: "true"
+    command: ["-a", "1.44"]
