@@ -101,7 +101,7 @@ add_ssh_pub_key() {
 deploy_ssh_config() {
     local username="${VARS[username]}"
     local ssh_port="${VARS[ssh_port]}"
-    local target="/etc/ssh/sshd_config.d/srv.conf"
+    local target="/etc/ssh/sshd_config.d/99-srv.conf"
     local template="$BASE_DIR/$target"
     local tmp_file
     [[ -f "$template" ]] || { echo "error: missing SSH template $template, exit" >&2; exit 1; }
