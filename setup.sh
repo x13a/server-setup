@@ -133,14 +133,14 @@ setup_fail2ban() {
     local template="$BASE_DIR/$target_file"
     local tmp_file
     [[ -f "$template" ]] || { echo "error: missing fail2ban template $template, exit" >&2; exit 1; }
-    echo "[*] setuping fail2ban..."
+    echo "[*] setting up fail2ban..."
     tmp_file="$(mktemp)"
     sed \
         -e "s/${DEFAULTS[ssh_port]}/${VARS[ssh_port]}/" \
         "$template" > "$tmp_file"
     sudo install -D -m 644 -o root -g root "$tmp_file" "$target_file"
     rm -f "$tmp_file"
-    sudo systemctl enable fail2ban
+    sudo systemctl enable --now fail2ban
     echo "[+] fail2ban config deployed to $target_file"
 }
 
@@ -178,8 +178,16 @@ set_docker_limits() {
     echo "[+] docker limits applied"
 }
 
+configure_docker() {
+    local target="/etc/docker/daemon.json"
+    [[ -f "$BASE_DIR/$target" ]] || { echo "error: missing $target, exit" >&2; exit 1; }
+    echo "[*] configuring docker..."
+    sudo install -D -m 644 -o root -g root "$BASE_DIR/$target" "$target"
+    echo "[+] docker config deployed to $target"
+}
+
 # ============================
-# System update
+# System
 # ============================
 
 update_sys() {
@@ -189,6 +197,14 @@ update_sys() {
     sudo apt-get install fail2ban ufw curl unattended-upgrades -y
     sudo apt-get autoremove -y
     echo "[+] system updated"
+}
+
+configure_sysctl() {
+    local target="/etc/sysctl.d/99-net-hardening.conf"
+    [[ -f "$BASE_DIR/$target" ]] || { echo "error: missing $target, exit" >&2; exit 1; }
+    echo "[*] configuring sysctl..."
+    sudo install -m 644 -o root -g root "$BASE_DIR/$target" "$target"
+    echo "[+] sysctl config deployed to $target"
 }
 
 # ============================
@@ -268,7 +284,9 @@ main() {
     configure_ssh
     configure_ufw
     setup_fail2ban
+    configure_sysctl
     install_docker
+    configure_docker
     set_docker_limits
     setup_swap
     echo "[+] done, reboot"

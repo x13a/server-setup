@@ -8,3 +8,10 @@ services:
     environment:
       WATCHTOWER_LABEL_ENABLE: "true"
     command: ["-a", "1.44"]
+    userns_mode: "host"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    logging:
+      options:
+        max-size: 10m
+        max-file: "5"
