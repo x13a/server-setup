@@ -190,7 +190,7 @@ configure_docker() {
 # System
 # ============================
 
-update_sys() {
+update_system() {
     echo "[*] updating system..."
     sudo apt-get update
     sudo apt-get upgrade -y
@@ -208,7 +208,7 @@ configure_sysctl() {
 }
 
 # ============================
-# Swap
+# ZRAM & Swap
 # ============================
 
 setup_swap() {
@@ -222,15 +222,7 @@ setup_swap() {
     fi
     ram_mb="$(free -m | awk '/^Mem:/ {print $2}')"
     if [ -z "$swap_size" ]; then
-        if (( ram_mb < 1024 )); then
-            swap_size="2G"
-        elif (( ram_mb < 2048 )); then
-            swap_size="1.5G"
-        elif (( ram_mb < 4096 )); then
-            swap_size="1G"
-        else
-            swap_size="512M"
-        fi
+        swap_size="512M"
     fi
     swap_mb="$(echo "$swap_size" | awk '
         /G$/ {print int($1 * 1024)}
@@ -263,6 +255,50 @@ setup_swap() {
     echo "[+] swap created and activated successfully"
 }
 
+setup_zram() {
+    echo "[*] Detecting system memory…"
+    local total_ram_mb=$(awk '/MemTotal/ { printf "%.0f", $2 / 1024 }' /proc/meminfo)
+    echo "[*] Total RAM: ${total_ram_mb} MB"
+    local zram_enabled="${ZRAM:-auto}"
+    local zram_percent="${ZRAM_PERCENT:-50}"
+    local zram_max_mb="${ZRAM_MAX:-2048}"
+    local swap_size_mb="${SWAP_SIZE:-0}"
+    local template="$BASE_DIR/etc/default/zramswap"
+    local tmp_file
+    zram_enabled=$(echo "$zram_enabled" | tr '[:upper:]' '[:lower:]')
+    echo "[*] ZRAM mode: $zram_enabled"
+    if [[ "$zram_enabled" == "auto" ]]; then
+        if (( total_ram_mb <= 2048 )); then
+            zram_enabled="on"
+        else
+            zram_enabled="off"
+        fi
+        echo "[*] Auto-selected ZRAM=$zram_enabled"
+    fi
+    if [[ "$zram_enabled" == "off" ]]; then
+        return 0
+    fi
+    [[ -f "$template" ]] || { echo "error: missing ZRAM template $template, exit" >&2; exit 1; }
+    echo "[+] Enabling ZRAM…"
+    sudo apt-get install -y zram-tools
+    tmp_file="$(mktemp)"
+    sed \
+        -e "s/{{PERCENT}}/${zram_percent}/" \
+        -e "s/{{ZRAM_SIZE}}/${zram_max_mb}/" \
+        "$template" > "$tmp_file"
+    sudo install -D -m 644 -o root -g root "$tmp_file" "/etc/default/zramswap"
+    rm -f "$tmp_file"
+    sudo systemctl enable --now zramswap.service
+    echo "[+] ZRAM activated"
+    echo "[*] Current zram devices:"
+    zramctl || true
+}
+
+setup_memory_optimization() {
+    setup_zram
+    setup_swap
+}
+
 # ============================
 # Main
 # ============================
@@ -277,10 +313,10 @@ main() {
     local username="${VARS[username]}"
     if [ "${SWITCHED:-}" = "1" ]; then
         export TRAP_USER="$username"
-        trap 'rm_sudoers "$TRAP_USER"' EXIT
+        trap 'rm_sudoers "$TRAP_USER"' EXIT INT TERM
     fi
     echo "[*] running as $username"
-    update_sys
+    update_system
     configure_ssh
     configure_ufw
     setup_fail2ban
@@ -288,7 +324,7 @@ main() {
     install_docker
     configure_docker
     set_docker_limits
-    setup_swap
+    setup_memory_optimization
     echo "[+] done, reboot"
 }
 

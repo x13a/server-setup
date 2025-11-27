@@ -29,7 +29,10 @@ workloads.
   - Deploys custom Docker daemon config with `userns-remap`.
   - Deploys custom Docker systemd overrides and memory limit service.
 
-- **Swap Management**
+- **Memory Optimization**
+  - Optionally enables **ZRAM** (compressed RAM swap) on hosts with limited memory.
+  - Defaults to auto mode: turns on ZRAM when RAM ≤ 2 GB, otherwise leaves it off.
+  - ZRAM sizing and cap can be tuned via environment variables.
   - Checks if a swap file exists; if not, creates one based on the configured size.
   - Swap size can be set via the environment variable `SWAP_SIZE` (e.g., `export SWAP_SIZE=2G`).
   - Enables the swap file and sets appropriate permissions.
@@ -56,6 +59,9 @@ Optional configuration before running:
 
 - `SSH_PORT`: custom SSH port (only used when the current port is `22`; default `10101`).
 - `SWAP_SIZE`: swap file size (e.g., `1G`, `2G`). If unset, the script auto-sizes based on RAM.
+- `ZRAM`: `auto` (default), `on`, or `off`. Auto enables ZRAM when the server has 2 GB RAM or less.
+- `ZRAM_PERCENT`: percent of total RAM to allocate for ZRAM swap (default `50`).
+- `ZRAM_MAX`: cap for ZRAM size in megabytes (default `2048`).
 
 Run the setup:
 
