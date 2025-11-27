@@ -58,7 +58,7 @@ cd server-setup
 Optional configuration before running:
 
 - `SSH_PORT`: custom SSH port (only used when the current port is `22`; default `10101`).
-- `SWAP_SIZE`: swap file size (e.g., `1G`, `2G`). If unset, the script auto-sizes based on RAM.
+- `SWAP_SIZE`: swap file size (e.g., `1G`, `2G`; default `512M`).
 - `ZRAM`: `auto` (default), `on`, or `off`. Auto enables ZRAM when the server has 2 GB RAM or less.
 - `ZRAM_PERCENT`: percent of total RAM to allocate for ZRAM swap (default `50`).
 - `ZRAM_MAX`: cap for ZRAM size in megabytes (default `2048`).
