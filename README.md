@@ -34,7 +34,7 @@ workloads.
   - Defaults to auto mode: turns on ZRAM when RAM ≤ 2 GB, otherwise leaves it off.
   - ZRAM sizing and cap can be tuned via environment variables.
   - Checks if a swap file exists; if not, creates one based on the configured size.
-  - Swap size can be set via the environment variable `SWAP_SIZE` (e.g., `export SWAP_SIZE=2G`).
+  - Swap size can be set via the environment variable `SWAP_SIZE` (e.g., `export SWAP_SIZE=1G`).
   - Enables the swap file and sets appropriate permissions.
   - Ensures the swap is persistent across reboots.
 
