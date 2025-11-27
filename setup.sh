@@ -66,7 +66,7 @@ rm_sudoers() {
 }
 
 # ============================
-# SSH configuration
+# SSH
 # ============================
 
 configure_ssh() {
