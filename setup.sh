@@ -263,7 +263,8 @@ setup_zram() {
     local zram_percent="${ZRAM_PERCENT:-50}"
     local zram_max_mb="${ZRAM_MAX:-2048}"
     local swap_size_mb="${SWAP_SIZE:-0}"
-    local template="$BASE_DIR/etc/default/zramswap"
+    local target="/etc/default/zramswap"
+    local template="$BASE_DIR/$target"
     local tmp_file
     zram_enabled=$(echo "$zram_enabled" | tr '[:upper:]' '[:lower:]')
     echo "[*] ZRAM mode: $zram_enabled"
@@ -286,7 +287,7 @@ setup_zram() {
         -e "s/{{PERCENT}}/${zram_percent}/" \
         -e "s/{{ZRAM_SIZE}}/${zram_max_mb}/" \
         "$template" > "$tmp_file"
-    sudo install -D -m 644 -o root -g root "$tmp_file" "/etc/default/zramswap"
+    sudo install -D -m 644 -o root -g root "$tmp_file" "$target"
     rm -f "$tmp_file"
     sudo systemctl enable --now zramswap.service
     echo "[+] ZRAM activated"
