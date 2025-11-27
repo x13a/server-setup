@@ -186,6 +186,12 @@ configure_docker() {
     echo "[+] docker config deployed to $target"
 }
 
+setup_docker() {
+    install_docker
+    configure_docker
+    set_docker_limits
+}
+
 # ============================
 # System
 # ============================
@@ -322,9 +328,7 @@ main() {
     configure_ufw
     setup_fail2ban
     configure_sysctl
-    install_docker
-    configure_docker
-    set_docker_limits
+    setup_docker
     setup_memory_optimization
     echo "[+] done, reboot"
 }
