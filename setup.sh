@@ -205,10 +205,10 @@ update_system() {
     echo "[+] system updated"
 }
 
-configure_sysctl() {
+configure_system() {
     local target="/etc/sysctl.d/99-net-hardening.conf"
     [[ -f "$BASE_DIR/$target" ]] || { echo "error: missing $target, exit" >&2; exit 1; }
-    echo "[*] configuring sysctl..."
+    echo "[*] configuring system..."
     sudo install -m 644 -o root -g root "$BASE_DIR/$target" "$target"
     echo "[+] sysctl config deployed to $target"
 }
@@ -327,7 +327,7 @@ main() {
     configure_ssh
     configure_ufw
     setup_fail2ban
-    configure_sysctl
+    configure_system
     setup_docker
     setup_memory_optimization
     echo "[+] done, reboot"
